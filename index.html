@@ -3,237 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Kegiatan & Anggota Himpunan</title>
+    <title>HimpunanHub | Manajemen Terpadu</title>
+    <!-- CSS & Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; }
         .active-tab { border-bottom: 4px solid #3b82f6; color: #3b82f6; }
-        .modal { transition: opacity 0.25s ease; }
-        body { background-color: #f3f4f6; }
+        .tab-btn { transition: all 0.2s ease; }
+        .tab-btn:hover:not(.active-tab) { color: #3b82f6; opacity: 0.8; }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); }
+        .loading-spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .action-link:hover { transform: translateY(-2px); }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="min-h-screen">
 
-    <div class="max-w-7xl mx-auto">
-        <!-- Header -->
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Sistem Informasi Himpunan</h1>
-            <p class="text-gray-500">Manajemen Program Kerja dan Database Anggota</p>
-        </div>
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+        <!-- HEADER -->
+        <header class="bg-white rounded-3xl p-8 mb-8 card-shadow flex flex-col md:flex-row justify-between items-center border border-slate-100">
+            <div>
+                <h1 class="text-3xl font-black tracking-tighter text-slate-900 uppercase italic">HIMPUNAN<span class="text-blue-600">HUB</span></h1>
+                <p class="text-slate-500 font-medium">Manajemen Kegiatan & Database Keanggotaan</p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <div class="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-2xl border border-blue-100">
+                    <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span class="text-blue-700 text-xs font-bold uppercase tracking-widest">Database Sync</span>
+                </div>
+            </div>
+        </header>
 
-        <!-- Navigation Tabs -->
-        <div class="flex space-x-8 mb-6 border-b border-gray-200 bg-white px-6 rounded-t-xl">
-            <button onclick="switchTab('activities')" id="tab-activities" class="py-4 font-semibold active-tab transition-all">
-                <i class="fas fa-tasks mr-2"></i>Program Kerja
+        <!-- NAVIGASI TAB -->
+        <nav class="flex space-x-10 mb-8 bg-white px-10 rounded-t-3xl border-b border-slate-200 card-shadow">
+            <button onclick="switchTab('activities')" id="tab-activities" class="tab-btn py-5 font-bold active-tab flex items-center text-sm uppercase tracking-wider">
+                <i class="fas fa-calendar-day mr-3"></i>Kegiatan
             </button>
-            <button onclick="switchTab('members')" id="tab-members" class="py-4 font-semibold text-gray-500 hover:text-blue-500 transition-all">
-                <i class="fas fa-users mr-2"></i>Data Anggota
+            <button onclick="switchTab('members')" id="tab-members" class="tab-btn py-5 font-bold text-slate-400 flex items-center text-sm uppercase tracking-wider">
+                <i class="fas fa-users-viewfinder mr-3"></i>Data Anggota
             </button>
-        </div>
+        </nav>
 
-        <!-- Search Bar -->
-        <div class="mb-6 flex flex-col md:flex-row gap-4">
+        <!-- TOOLBAR (Search & Add) -->
+        <div class="mb-8 flex flex-col md:flex-row gap-4">
             <div class="relative flex-grow">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                <span class="absolute inset-y-0 left-0 pl-5 flex items-center text-slate-400">
                     <i class="fas fa-search"></i>
                 </span>
-                <input type="text" id="searchInput" onkeyup="filterData()" placeholder="Cari data..." class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white">
+                <input type="text" id="searchInput" onkeyup="filterData()" placeholder="Cari program, divisi, atau nama..." class="block w-full pl-14 pr-6 py-4 border-2 border-slate-50 rounded-2xl bg-white shadow-sm focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all">
             </div>
-            <button id="addBtn" onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                <i class="fas fa-plus mr-2"></i>Tambah Data
+            <button onclick="openModal()" class="bg-slate-900 hover:bg-black text-white px-10 py-4 rounded-2xl font-bold shadow-xl transition-all transform active:scale-95 flex items-center justify-center">
+                <i class="fas fa-plus-circle mr-3"></i>Tambah Data
             </button>
         </div>
 
-        <!-- Content Area -->
-        <div id="content-activities" class="tab-content">
-            <div class="overflow-x-auto bg-white rounded-xl shadow-sm">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+        <!-- KONTEN KEGIATAN -->
+        <div id="content-activities" class="tab-content bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-100">
+                    <thead class="bg-gray-50/50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Program Kerja</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periode</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deadline</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PJ</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">File LPJ</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dokumentasi</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Program</th>
+                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Periode</th>
+                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Pelaksanaan</th>
+                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Penanggung Jawab</th>
+                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Lampiran</th>
+                            <th class="px-8 py-5 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">Edit</th>
                         </tr>
                     </thead>
-                    <tbody id="activityBody" class="divide-y divide-gray-200"></tbody>
+                    <tbody id="activityBody" class="divide-y divide-slate-50 bg-white">
+                        <tr><td colspan="6" class="px-8 py-20 text-center text-slate-400"><div class="loading-spinner inline-block mr-2"></div> Memuat data...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <div id="content-members" class="tab-content hidden">
-            <div class="overflow-x-auto bg-white rounded-xl shadow-sm">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+        <!-- KONTEN ANGGOTA -->
+        <div id="content-members" class="tab-content hidden bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-100">
+                    <thead class="bg-gray-50/50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama / NIM</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Divisi / Angkatan</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kontak</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tgl Lahir</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">TTD</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Nama / NIM</th>
+                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Divisi / Angkatan</th>
+                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Kontak</th>
+                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">TTD</th>
+                            <th class="px-8 py-5 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">Edit</th>
                         </tr>
                     </thead>
-                    <tbody id="memberBody" class="divide-y divide-gray-200"></tbody>
+                    <tbody id="memberBody" class="divide-y divide-slate-50 bg-white">
+                        <tr><td colspan="5" class="px-8 py-20 text-center text-slate-400"><div class="loading-spinner inline-block mr-2"></div> Memuat data...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Modal Form -->
-    <div id="formModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
-            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                <h3 id="modalTitle" class="text-xl font-bold text-gray-800">Tambah Data</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+    <!-- MODAL FORM -->
+    <div id="formModal" class="fixed inset-0 bg-slate-900/40 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-all">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-white/20">
+            <div class="px-10 py-8 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-2xl font-black text-slate-800 tracking-tight">TAMBAH DATA</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 text-3xl">&times;</button>
             </div>
-            <form id="mainForm" class="p-6">
-                <div id="activityFields" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <form id="mainForm" class="p-10">
+                <!-- Bidang Input Kegiatan -->
+                <div id="activityFields" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Program Kerja</label>
-                        <input type="text" name="program_name" class="w-full border rounded-lg p-2" required>
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Nama Program Kerja</label>
+                        <input type="text" name="program_name" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none transition-all" placeholder="Contoh: Musyawarah Mahasiswa">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Periode (3 Bulan)</label>
-                        <select name="period" class="w-full border rounded-lg p-2">
-                            <option>Januari - Maret</option>
-                            <option>April - Juni</option>
-                            <option>Juli - September</option>
-                            <option>Oktober - Desember</option>
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Periode (3 Bulan)</label>
+                        <select name="period" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none bg-white">
+                            <option value="Januari - Maret">Januari - Maret</option>
+                            <option value="April - Juni">April - Juni</option>
+                            <option value="Juli - September">Juli - September</option>
+                            <option value="Oktober - Desember">Oktober - Desember</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
-                        <input type="date" name="deadline" class="w-full border rounded-lg p-2">
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Tanggal Pelaksanaan</label>
+                        <input type="date" name="execution_date" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Penanggung Jawab</label>
-                        <input type="text" name="person_in_charge" class="w-full border rounded-lg p-2">
+                        <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Nama Penanggung Jawab</label>
+                        <input type="text" name="pic_name" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none" placeholder="Nama PJ">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Link LPJ</label>
-                        <input type="url" name="lpj_link" placeholder="https://..." class="w-full border rounded-lg p-2">
+                        <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Link File LPJ</label>
+                        <input type="url" name="lpj_link" placeholder="Link PDF LPJ" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
                     <div class="col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Link Dokumentasi</label>
-                        <input type="url" name="doc_link" placeholder="https://..." class="w-full border rounded-lg p-2">
+                        <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Link Dokumentasi</label>
+                        <input type="url" name="doc_link" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
                 </div>
 
-                <div id="memberFields" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                        <input type="text" name="name" class="w-full border rounded-lg p-2">
+                <!-- Bidang Input Anggota -->
+                <div id="memberFields" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+                    <div class="col-span-2 grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Nama Lengkap</label>
+                            <input type="text" name="name" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">NIM</label>
+                            <input type="text" name="nim" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">NIM</label>
-                        <input type="text" name="nim" class="w-full border rounded-lg p-2">
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Angkatan</label>
+                        <input type="text" name="batch" placeholder="2024" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Angkatan</label>
-                        <input type="text" name="year" placeholder="2023" class="w-full border rounded-lg p-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Divisi</label>
-                        <select name="division" class="w-full border rounded-lg p-2">
-                            <option>Ketua</option><option>Wakil Ketua</option><option>Sekretaris</option>
-                            <option>Bendahara</option><option>AKRIS</option><option>HIDE</option>
-                            <option>EKRAF</option><option>PSDM</option><option>MEDKOMINFO</option>
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Divisi</label>
+                        <select name="division" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none bg-white">
+                            <option value="Ketua">Ketua</option><option value="Wakil Ketua">Wakil Ketua</option>
+                            <option value="Sekretaris">Sekretaris</option><option value="Bendahara">Bendahara</option>
+                            <option value="AKRIS">AKRIS</option><option value="HIDE">HIDE</option>
+                            <option value="EKRAF">EKRAF</option><option value="PSDM">PSDM</option>
+                            <option value="MEDKOMINFO">MEDKOMINFO</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">No. HP</label>
-                        <input type="text" name="phone" class="w-full border rounded-lg p-2">
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">No. HP</label>
+                        <input type="text" name="phone" placeholder="08..." class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input type="email" name="email" class="w-full border rounded-lg p-2">
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Email</label>
+                        <input type="email" name="email" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
-                        <input type="date" name="birth_date" class="w-full border rounded-lg p-2">
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Tanggal Lahir</label>
+                        <input type="date" name="birth_date" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Link TTD</label>
-                        <input type="url" name="signature_link" placeholder="https://..." class="w-full border rounded-lg p-2">
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Link Tanda Tangan (TTD)</label>
+                        <input type="url" name="signature_link" placeholder="Link gambar TTD" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
                 </div>
 
-                <div class="mt-8 flex justify-end space-x-3">
-                    <button type="button" onclick="closeModal()" class="px-6 py-2 border rounded-lg text-gray-600 hover:bg-gray-50">Batal</button>
-                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
+                <div class="mt-12 flex justify-end space-x-6">
+                    <button type="button" onclick="closeModal()" class="px-8 py-4 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-gray-600 transition-colors">Batal</button>
+                    <button type="submit" id="saveBtn" class="px-10 py-4 bg-blue-600 text-white rounded-[1.5rem] font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center min-w-[180px] justify-center transform active:scale-95">
+                        <span id="btnText">SIMPAN DATA</span>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // Supabase Configuration
-        const SUPABASE_URL = "https://kgctexmnjodfkpdhnozz.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_tEISwf7vf3O9LST_FzzAOQ_LLvQYIjo";
+        // INISIALISASI SUPABASE
+        const SUPABASE_URL = "https://usytpyueonyhkqaetbsu.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzeXRweXVlb255aGtxYWV0YnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwNjYxNzMsImV4cCI6MjA4MjY0MjE3M30.yDqnnUTq2b9rQ8gQ0xLtWAwf_07c3qrcmqPkRqUDSMc";
+        
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentTab = 'activities';
         let editId = null;
 
-        // Initialize Data
+        // Saat halaman dimuat
         window.onload = () => {
             fetchData();
         };
 
+        // Ganti Tab
         function switchTab(tab) {
             currentTab = tab;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.getElementById(`content-${tab}`).classList.remove('hidden');
             
-            document.getElementById('tab-activities').classList.remove('active-tab', 'text-blue-500');
-            document.getElementById('tab-members').classList.remove('active-tab', 'text-blue-500');
-            document.getElementById('tab-activities').classList.add('text-gray-500');
-            document.getElementById('tab-members').classList.add('text-gray-500');
+            // Update Styling Tab
+            const actTab = document.getElementById('tab-activities');
+            const memTab = document.getElementById('tab-members');
             
-            document.getElementById(`tab-${tab}`).classList.add('active-tab', 'text-blue-500');
-            document.getElementById(`tab-${tab}`).classList.remove('text-gray-500');
+            if(tab === 'activities') {
+                actTab.classList.add('active-tab', 'text-blue-600');
+                actTab.classList.remove('text-slate-400');
+                memTab.classList.remove('active-tab', 'text-blue-600');
+                memTab.classList.add('text-slate-400');
+            } else {
+                memTab.classList.add('active-tab', 'text-blue-600');
+                memTab.classList.remove('text-slate-400');
+                actTab.classList.remove('active-tab', 'text-blue-600');
+                actTab.classList.add('text-slate-400');
+            }
             
             fetchData();
         }
 
+        // Ambil Data
         async function fetchData() {
             const table = currentTab;
+            const target = table === 'activities' ? 'activityBody' : 'memberBody';
+            
             const { data, error } = await _supabase.from(table).select('*').order('created_at', { ascending: false });
             
             if (error) {
-                console.error("Fetch error:", error);
+                console.error("Error fetching data:", error);
+                document.getElementById(target).innerHTML = `<tr><td colspan="10" class="text-center py-20 text-red-500 font-bold uppercase tracking-widest text-[10px]">Gagal memuat data dari server.</td></tr>`;
                 return;
             }
 
-            if (currentTab === 'activities') {
-                renderActivities(data);
-            } else {
-                renderMembers(data);
-            }
+            if (table === 'activities') renderActivities(data);
+            else renderMembers(data);
         }
 
         function renderActivities(data) {
             const body = document.getElementById('activityBody');
+            if (!data || data.length === 0) {
+                body.innerHTML = '<tr><td colspan="6" class="px-8 py-20 text-center text-slate-300 italic">Belum ada data kegiatan.</td></tr>';
+                return;
+            }
             body.innerHTML = data.map(item => `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-medium text-gray-900">${item.program_name}</td>
-                    <td class="px-6 py-4">${item.period}</td>
-                    <td class="px-6 py-4">${item.deadline || '-'}</td>
-                    <td class="px-6 py-4">${item.person_in_charge || '-'}</td>
-                    <td class="px-6 py-4">
-                        ${item.lpj_link ? `<a href="${item.lpj_link}" target="_blank" class="text-blue-600 hover:underline"><i class="fas fa-file-pdf mr-1"></i>Link</a>` : '<span class="text-red-400">Belum Ada</span>'}
+                <tr class="hover:bg-blue-50/20 transition-colors">
+                    <td class="px-8 py-6 font-extrabold text-slate-900">${item.program_name}</td>
+                    <td class="px-8 py-6 text-sm text-slate-500 font-medium">${item.period}</td>
+                    <td class="px-8 py-6 text-sm"><span class="bg-slate-100 px-3 py-1 rounded-lg font-bold text-slate-600">${item.execution_date || '-'}</span></td>
+                    <td class="px-8 py-6 text-sm text-slate-400 font-bold uppercase tracking-widest">${item.pic_name || '-'}</td>
+                    <td class="px-8 py-6">
+                        <div class="flex items-center gap-3">
+                            ${item.lpj_link ? `
+                                <a href="${item.lpj_link}" target="_blank" title="Link LPJ" class="action-link text-red-400 hover:text-red-600 transition-all">
+                                    <i class="fas fa-file-pdf text-lg"></i>
+                                </a>` : '<span class="text-slate-200"><i class="fas fa-file-pdf"></i></span>'}
+                            ${item.doc_link ? `
+                                <a href="${item.doc_link}" target="_blank" title="Dokumentasi" class="action-link text-blue-400 hover:text-blue-600 transition-all">
+                                    <i class="fas fa-images text-lg"></i>
+                                </a>` : '<span class="text-slate-200"><i class="fas fa-images"></i></span>'}
+                        </div>
                     </td>
-                    <td class="px-6 py-4">
-                        ${item.doc_link ? `<a href="${item.doc_link}" target="_blank" class="text-blue-600 hover:underline"><i class="fas fa-images mr-1"></i>Link</a>` : '<span class="text-gray-400">-</span>'}
-                    </td>
-                    <td class="px-6 py-4 space-x-2">
-                        <button onclick="editData('${item.id}')" class="text-yellow-600 hover:text-yellow-800"><i class="fas fa-edit"></i></button>
-                        <button onclick="deleteData('${item.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                    <td class="px-8 py-6 text-center">
+                        <button onclick="editData('${item.id}')" class="text-blue-400 hover:text-blue-600 transition-all"><i class="fas fa-edit"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -241,110 +296,103 @@
 
         function renderMembers(data) {
             const body = document.getElementById('memberBody');
+            if (!data || data.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="px-8 py-20 text-center text-slate-300 italic">Database anggota masih kosong.</td></tr>';
+                return;
+            }
             body.innerHTML = data.map(item => `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4">
-                        <div class="font-bold">${item.name}</div>
-                        <div class="text-sm text-gray-500">${item.nim}</div>
+                <tr class="hover:bg-blue-50/20 transition-colors">
+                    <td class="px-8 py-6">
+                        <div class="font-extrabold text-slate-900">${item.name}</div>
+                        <div class="text-[10px] text-slate-400 font-mono tracking-widest mt-0.5">${item.nim}</div>
                     </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">${item.division}</span>
-                        <div class="text-sm mt-1">Angkatan ${item.year}</div>
+                    <td class="px-8 py-6">
+                        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase tracking-[0.15em]">${item.division}</span>
+                        <div class="text-[10px] text-slate-400 mt-2 font-bold italic uppercase tracking-tighter">Angkatan ${item.batch || '-'}</div>
                     </td>
-                    <td class="px-6 py-4 text-sm">
-                        <div><i class="fab fa-whatsapp text-green-500 mr-1"></i>${item.phone}</div>
-                        <div class="text-gray-500">${item.email}</div>
+                    <td class="px-8 py-6">
+                        <div class="text-xs font-bold text-slate-600 mb-1"><i class="fab fa-whatsapp text-green-500 mr-1.5"></i>${item.phone || '-'}</div>
+                        <div class="text-[10px] text-slate-400 font-medium lowercase italic">${item.email || '-'}</div>
                     </td>
-                    <td class="px-6 py-4 text-sm">${item.birth_date || '-'}</td>
-                    <td class="px-6 py-4">
-                        ${item.signature_link ? `<a href="${item.signature_link}" target="_blank" class="text-gray-600 hover:text-black"><i class="fas fa-signature"></i></a>` : '-'}
+                    <td class="px-8 py-6">
+                        ${item.signature_link ? `<a href="${item.signature_link}" target="_blank" class="text-slate-300 hover:text-blue-500"><i class="fas fa-signature text-xl"></i></a>` : '-'}
                     </td>
-                    <td class="px-6 py-4 space-x-2">
-                        <button onclick="editData('${item.id}')" class="text-yellow-600 hover:text-yellow-800"><i class="fas fa-edit"></i></button>
-                        <button onclick="deleteData('${item.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                    <td class="px-8 py-6 text-center">
+                        <button onclick="editData('${item.id}')" class="text-blue-400 hover:text-blue-600 transition-all"><i class="fas fa-edit"></i></button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        // Search/Filter Logic
+        // Pencarian
         function filterData() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            const rows = document.querySelectorAll(currentTab === 'activities' ? '#activityBody tr' : '#memberBody tr');
-            
+            const rows = document.querySelectorAll('tbody tr');
             rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
+                row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
             });
         }
 
-        // Modal Logic
+        // Modal
         function openModal() {
             editId = null;
             document.getElementById('mainForm').reset();
-            document.getElementById('modalTitle').innerText = `Tambah ${currentTab === 'activities' ? 'Program Kerja' : 'Anggota'}`;
+            document.getElementById('modalTitle').innerText = currentTab === 'activities' ? 'TAMBAH KEGIATAN' : 'TAMBAH ANGGOTA';
             document.getElementById('formModal').classList.remove('hidden');
-            
-            if (currentTab === 'activities') {
-                document.getElementById('activityFields').classList.remove('hidden');
-                document.getElementById('memberFields').classList.add('hidden');
-            } else {
-                document.getElementById('activityFields').classList.add('hidden');
-                document.getElementById('memberFields').classList.remove('hidden');
-            }
+            document.getElementById('activityFields').classList.toggle('hidden', currentTab !== 'activities');
+            document.getElementById('memberFields').classList.toggle('hidden', currentTab === 'activities');
         }
 
         function closeModal() {
             document.getElementById('formModal').classList.add('hidden');
         }
 
-        // CRUD Operations
+        // Simpan / Edit
         document.getElementById('mainForm').onsubmit = async (e) => {
             e.preventDefault();
+            const btnText = document.getElementById('btnText');
+            const saveBtn = document.getElementById('saveBtn');
+            btnText.innerHTML = '<div class="loading-spinner"></div> MEMPROSES...';
+            saveBtn.disabled = true;
+
             const formData = new FormData(e.target);
-            const entry = Object.fromEntries(formData.entries());
+            const rawEntry = Object.fromEntries(formData.entries());
             
-            // Clean up empty fields
-            Object.keys(entry).forEach(key => {
-                if (!entry[key]) delete entry[key];
-            });
+            // Pembersihan kolom berdasarkan tabel aktif
+            const entry = {};
+            const activityCols = ['program_name', 'period', 'execution_date', 'pic_name', 'lpj_link', 'doc_link'];
+            const memberCols = ['name', 'nim', 'batch', 'division', 'phone', 'email', 'birth_date', 'signature_link'];
+            const validCols = currentTab === 'activities' ? activityCols : memberCols;
 
-            let result;
-            if (editId) {
-                result = await _supabase.from(currentTab).update(entry).eq('id', editId);
-            } else {
-                result = await _supabase.from(currentTab).insert([entry]);
-            }
+            validCols.forEach(col => { if(rawEntry[col]) entry[col] = rawEntry[col]; });
 
-            if (result.error) {
-                alert("Gagal menyimpan data: " + result.error.message);
-            } else {
+            try {
+                let res;
+                if (editId) res = await _supabase.from(currentTab).update(entry).eq('id', editId);
+                else res = await _supabase.from(currentTab).insert([entry]);
+
+                if (res.error) throw res.error;
+                
                 closeModal();
                 fetchData();
+            } catch (err) {
+                console.error("Save error:", err);
+                alert("Gagal menyimpan data: " + err.message);
+            } finally {
+                btnText.innerText = "SIMPAN SEKARANG";
+                saveBtn.disabled = false;
             }
         };
 
+        // Edit
         async function editData(id) {
             editId = id;
             const { data, error } = await _supabase.from(currentTab).select('*').eq('id', id).single();
             if (error) return;
-
             openModal();
-            document.getElementById('modalTitle').innerText = `Edit ${currentTab === 'activities' ? 'Program Kerja' : 'Anggota'}`;
-            
+            document.getElementById('modalTitle').innerText = `EDIT DATA`;
             const form = document.getElementById('mainForm');
-            Object.keys(data).forEach(key => {
-                const input = form.elements[key];
-                if (input) input.value = data[key];
-            });
-        }
-
-        async function deleteData(id) {
-            if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
-                const { error } = await _supabase.from(currentTab).delete().eq('id', id);
-                if (error) alert("Gagal menghapus");
-                else fetchData();
-            }
+            Object.keys(data).forEach(k => { if(form.elements[k]) form.elements[k].value = data[k] || ''; });
         }
     </script>
 </body>
