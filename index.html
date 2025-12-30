@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HimpunanHub | Manajemen Terpadu</title>
+    <title>Website Internal HMTT</title>
     <!-- CSS & Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -37,7 +37,7 @@
         <!-- HEADER -->
         <header class="bg-white rounded-3xl p-8 mb-8 card-shadow flex flex-col md:flex-row justify-between items-center border border-slate-100">
             <div>
-                <h1 class="text-3xl font-black tracking-tighter text-slate-900 uppercase italic">HIMPUNAN<span class="text-blue-600">HUB</span></h1>
+                <h1 class="text-3xl font-black tracking-tighter text-slate-900 uppercase italic">HM<span class="text-red-600">TT</span></h1>
                 <p class="text-slate-500 font-medium">Manajemen Kegiatan & Database Keanggotaan</p>
             </div>
             <div class="mt-4 md:mt-0">
@@ -163,21 +163,25 @@
                         <input type="date" name="execution_date" class="w-full border-2 border-slate-100 rounded-xl p-3 focus:border-blue-500 outline-none">
                     </div>
 
-                    <!-- Baris 3: Tautan Lampiran (3 Kolom) -->
+                    <!-- Baris 3 & 4: Tautan Lampiran -->
                     <div class="col-span-2 border-t border-slate-50 pt-4 mt-2">
-                        <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-3">Tautan Lampiran</p>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-3">Tautan Lampiran (Sesuai Urutan)</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Link LPJ</label>
-                                <input type="url" name="lpj_link" placeholder="URL LPJ" class="w-full border-2 border-slate-100 rounded-xl p-3 focus:border-blue-500 outline-none text-xs">
+                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">1. Link Proposal</label>
+                                <input type="url" name="proposal_link" placeholder="URL Proposal" class="w-full border-2 border-slate-100 rounded-xl p-3 focus:border-blue-500 outline-none text-xs">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Link Spreadsheet</label>
+                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">2. Link Spreadsheet</label>
                                 <input type="url" name="spreadsheet_link" placeholder="URL Spreadsheet" class="w-full border-2 border-slate-100 rounded-xl p-3 focus:border-blue-500 outline-none text-xs">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Link Dokumentasi</label>
+                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">3. Link Dokumentasi</label>
                                 <input type="url" name="doc_link" placeholder="URL Dokumentasi" class="w-full border-2 border-slate-100 rounded-xl p-3 focus:border-blue-500 outline-none text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">4. Link LPJ</label>
+                                <input type="url" name="lpj_link" placeholder="URL LPJ" class="w-full border-2 border-slate-100 rounded-xl p-3 focus:border-blue-500 outline-none text-xs">
                             </div>
                         </div>
                     </div>
@@ -312,10 +316,10 @@
                     <td class="px-8 py-6 text-sm text-slate-400 font-bold uppercase tracking-widest">${item.pic_name || '-'}</td>
                     <td class="px-8 py-6">
                         <div class="flex items-center gap-3">
-                            ${item.lpj_link ? `
-                                <a href="${item.lpj_link}" target="_blank" title="Link LPJ" class="action-link text-red-400 hover:text-red-600 transition-all">
-                                    <i class="fas fa-file-pdf text-lg"></i>
-                                </a>` : '<span class="text-slate-200"><i class="fas fa-file-pdf"></i></span>'}
+                            ${item.proposal_link ? `
+                                <a href="${item.proposal_link}" target="_blank" title="Proposal" class="action-link text-purple-500 hover:text-purple-700 transition-all">
+                                    <i class="fas fa-file-lines text-lg"></i>
+                                </a>` : '<span class="text-slate-200"><i class="fas fa-file-lines"></i></span>'}
                             ${item.spreadsheet_link ? `
                                 <a href="${item.spreadsheet_link}" target="_blank" title="Spreadsheet" class="action-link text-green-500 hover:text-green-700 transition-all">
                                     <i class="fas fa-file-excel text-lg"></i>
@@ -324,6 +328,10 @@
                                 <a href="${item.doc_link}" target="_blank" title="Dokumentasi" class="action-link text-blue-400 hover:text-blue-600 transition-all">
                                     <i class="fas fa-images text-lg"></i>
                                 </a>` : '<span class="text-slate-200"><i class="fas fa-images"></i></span>'}
+                            ${item.lpj_link ? `
+                                <a href="${item.lpj_link}" target="_blank" title="Link LPJ" class="action-link text-red-400 hover:text-red-600 transition-all">
+                                    <i class="fas fa-file-pdf text-lg"></i>
+                                </a>` : '<span class="text-slate-200"><i class="fas fa-file-pdf"></i></span>'}
                         </div>
                     </td>
                     <td class="px-8 py-6 text-center">
@@ -432,7 +440,7 @@
             const rawEntry = Object.fromEntries(formData.entries());
             
             const entry = {};
-            const activityCols = ['program_name', 'period', 'execution_date', 'pic_name', 'lpj_link', 'spreadsheet_link', 'doc_link'];
+            const activityCols = ['program_name', 'period', 'execution_date', 'pic_name', 'proposal_link', 'spreadsheet_link', 'doc_link', 'lpj_link'];
             const memberCols = ['name', 'nim', 'batch', 'division', 'phone', 'email', 'birth_date', 'signature_link'];
             const validCols = currentTab === 'activities' ? activityCols : memberCols;
 
