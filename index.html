@@ -131,7 +131,7 @@
     <div id="formModal" class="fixed inset-0 bg-slate-900/40 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-all">
         <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-white/20">
             <div class="px-10 py-8 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                <h3 id="modalTitle" class="text-2xl font-black text-slate-800 tracking-tight">TAMBAH DATA</h3>
+                <h3 id="modalTitle" class="text-2xl font-black text-slate-800 tracking-tight text-center flex-grow uppercase">Tambah Data</h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 text-3xl">&times;</button>
             </div>
             
@@ -155,21 +155,24 @@
                         <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Tanggal Pelaksanaan</label>
                         <input type="date" name="execution_date" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
-                    <div>
+                    <div class="col-span-2">
                         <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Nama Penanggung Jawab</label>
                         <input type="text" name="pic_name" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none" placeholder="Nama PJ">
                     </div>
-                    <div>
-                        <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Link File LPJ</label>
-                        <input type="url" name="lpj_link" placeholder="Link PDF LPJ" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Link Dokumentasi</label>
-                        <input type="url" name="doc_link" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
+                    <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
+                        <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-4">Tautan Lampiran</p>
                     </div>
                     <div class="col-span-2">
-                        <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Link Spreadsheet</label>
-                        <input type="url" name="spreadsheet_link" placeholder="Link Google Sheets" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
+                        <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">1. Link File LPJ</label>
+                        <input type="url" name="lpj_link" placeholder="https://drive.google.com/... (LPJ)" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">2. Link Spreadsheet</label>
+                        <input type="url" name="spreadsheet_link" placeholder="https://docs.google.com/spreadsheets/... (Spreadsheet)" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">3. Link Dokumentasi</label>
+                        <input type="url" name="doc_link" placeholder="https://... (Dokumentasi)" class="w-full border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none">
                     </div>
                 </div>
 
@@ -245,7 +248,7 @@
 
         function switchTab(tab) {
             currentTab = tab;
-            sortConfig = { key: null, direction: 'asc' }; // Reset sort saat pindah tab
+            sortConfig = { key: null, direction: 'asc' };
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.getElementById(`content-${tab}`).classList.remove('hidden');
             
@@ -306,14 +309,14 @@
                                 <a href="${item.lpj_link}" target="_blank" title="Link LPJ" class="action-link text-red-400 hover:text-red-600 transition-all">
                                     <i class="fas fa-file-pdf text-lg"></i>
                                 </a>` : '<span class="text-slate-200"><i class="fas fa-file-pdf"></i></span>'}
-                            ${item.doc_link ? `
-                                <a href="${item.doc_link}" target="_blank" title="Dokumentasi" class="action-link text-blue-400 hover:text-blue-600 transition-all">
-                                    <i class="fas fa-images text-lg"></i>
-                                </a>` : '<span class="text-slate-200"><i class="fas fa-images"></i></span>'}
                             ${item.spreadsheet_link ? `
                                 <a href="${item.spreadsheet_link}" target="_blank" title="Spreadsheet" class="action-link text-green-500 hover:text-green-700 transition-all">
                                     <i class="fas fa-file-excel text-lg"></i>
                                 </a>` : '<span class="text-slate-200"><i class="fas fa-file-excel"></i></span>'}
+                            ${item.doc_link ? `
+                                <a href="${item.doc_link}" target="_blank" title="Dokumentasi" class="action-link text-blue-400 hover:text-blue-600 transition-all">
+                                    <i class="fas fa-images text-lg"></i>
+                                </a>` : '<span class="text-slate-200"><i class="fas fa-images"></i></span>'}
                         </div>
                     </td>
                     <td class="px-8 py-6 text-center">
@@ -353,45 +356,32 @@
             `).join('');
         }
 
-        // FUNGSI SORTING
         function sortTable(key) {
-            // Tentukan arah
             if (sortConfig.key === key) {
                 sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
             } else {
                 sortConfig.key = key;
                 sortConfig.direction = 'asc';
             }
-
-            // Update Icon UI
             updateSortIcons();
-
-            // Lakukan Sorting Data
             cachedData.sort((a, b) => {
                 let valA = a[key] ? a[key].toString().toLowerCase() : '';
                 let valB = b[key] ? b[key].toString().toLowerCase() : '';
-
-                // Penanganan khusus untuk angka (misal NIM)
                 if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
                     valA = parseFloat(valA);
                     valB = parseFloat(valB);
                 }
-
                 if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             });
-
             renderAll();
         }
 
         function updateSortIcons() {
-            // Reset semua icon
             document.querySelectorAll('th i[id^="sort-icon"]').forEach(icon => {
                 icon.className = 'fas fa-sort ml-1 opacity-40';
             });
-
-            // Set icon aktif
             const activeIcon = document.getElementById(`sort-icon-${sortConfig.key}`);
             if (activeIcon) {
                 activeIcon.className = sortConfig.direction === 'asc' 
@@ -400,7 +390,6 @@
             }
         }
 
-        // Pencarian
         function filterData() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const filtered = cachedData.filter(item => {
@@ -408,12 +397,10 @@
                     val && val.toString().toLowerCase().includes(query)
                 );
             });
-            
             if (currentTab === 'activities') renderActivities(filtered);
             else renderMembers(filtered);
         }
 
-        // Modal
         function openModal() {
             editId = null;
             document.getElementById('mainForm').reset();
@@ -438,7 +425,7 @@
             const rawEntry = Object.fromEntries(formData.entries());
             
             const entry = {};
-            const activityCols = ['program_name', 'period', 'execution_date', 'pic_name', 'lpj_link', 'doc_link', 'spreadsheet_link'];
+            const activityCols = ['program_name', 'period', 'execution_date', 'pic_name', 'lpj_link', 'spreadsheet_link', 'doc_link'];
             const memberCols = ['name', 'nim', 'batch', 'division', 'phone', 'email', 'birth_date', 'signature_link'];
             const validCols = currentTab === 'activities' ? activityCols : memberCols;
 
@@ -453,9 +440,7 @@
                 } else {
                     res = await _supabase.from(currentTab).insert([entry]);
                 }
-
                 if (res.error) throw res.error;
-                
                 closeModal();
                 fetchData();
             } catch (err) {
@@ -477,12 +462,10 @@
                 alert("Gagal mengambil data untuk diedit.");
                 return;
             }
-            
             openModal();
             editId = id; 
             document.getElementById('modalTitle').innerText = `EDIT DATA ${currentTab === 'activities' ? 'KEGIATAN' : 'ANGGOTA'}`;
             const form = document.getElementById('mainForm');
-            
             Object.keys(data).forEach(k => { 
                 if(form.elements[k]) form.elements[k].value = data[k] || ''; 
             });
