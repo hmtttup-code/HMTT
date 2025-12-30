@@ -23,6 +23,7 @@
             width: 16px;
             height: 16px;
             animation: spin 1s linear infinite;
+            display: inline-block;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .action-link:hover { transform: translateY(-2px); }
@@ -333,9 +334,9 @@
             });
         }
 
-        // Modal
+        // Buka Modal (Tambah Data Baru)
         function openModal() {
-            editId = null;
+            editId = null; // Penting: Reset ID agar sistem tahu ini data baru
             document.getElementById('mainForm').reset();
             document.getElementById('modalTitle').innerText = currentTab === 'activities' ? 'TAMBAH KEGIATAN' : 'TAMBAH ANGGOTA';
             document.getElementById('formModal').classList.remove('hidden');
@@ -347,7 +348,7 @@
             document.getElementById('formModal').classList.add('hidden');
         }
 
-        // Simpan / Edit
+        // Simpan / Edit (Update)
         document.getElementById('mainForm').onsubmit = async (e) => {
             e.preventDefault();
             const btnText = document.getElementById('btnText');
@@ -358,18 +359,25 @@
             const formData = new FormData(e.target);
             const rawEntry = Object.fromEntries(formData.entries());
             
-            // Pembersihan kolom berdasarkan tabel aktif
             const entry = {};
             const activityCols = ['program_name', 'period', 'execution_date', 'pic_name', 'lpj_link', 'doc_link'];
             const memberCols = ['name', 'nim', 'batch', 'division', 'phone', 'email', 'birth_date', 'signature_link'];
             const validCols = currentTab === 'activities' ? activityCols : memberCols;
 
-            validCols.forEach(col => { if(rawEntry[col]) entry[col] = rawEntry[col]; });
+            // Pastikan semua kolom yang relevan dikirim
+            validCols.forEach(col => { 
+                entry[col] = rawEntry[col] !== "" ? rawEntry[col] : null; 
+            });
 
             try {
                 let res;
-                if (editId) res = await _supabase.from(currentTab).update(entry).eq('id', editId);
-                else res = await _supabase.from(currentTab).insert([entry]);
+                if (editId) {
+                    // Update data yang sudah ada berdasarkan ID
+                    res = await _supabase.from(currentTab).update(entry).eq('id', editId);
+                } else {
+                    // Masukkan data baru jika editId null
+                    res = await _supabase.from(currentTab).insert([entry]);
+                }
 
                 if (res.error) throw res.error;
                 
@@ -377,22 +385,38 @@
                 fetchData();
             } catch (err) {
                 console.error("Save error:", err);
-                alert("Gagal menyimpan data: " + err.message);
+                if (err.code === '23505') {
+                    alert("Gagal menyimpan: NIM sudah terdaftar! Harap gunakan NIM yang berbeda.");
+                } else {
+                    alert("Gagal menyimpan data: " + err.message);
+                }
             } finally {
                 btnText.innerText = "SIMPAN SEKARANG";
                 saveBtn.disabled = false;
             }
         };
 
-        // Edit
+        // Fungsi Edit Data
         async function editData(id) {
-            editId = id;
+            // 1. Ambil data spesifik dari Supabase berdasarkan ID
             const { data, error } = await _supabase.from(currentTab).select('*').eq('id', id).single();
-            if (error) return;
+            if (error) {
+                alert("Gagal mengambil data untuk diedit.");
+                return;
+            }
+            
+            // 2. Buka modal UI (ini akan mereset editId sementara melalui openModal())
             openModal();
-            document.getElementById('modalTitle').innerText = `EDIT DATA`;
+            
+            // 3. Set kembali editId dan sesuaikan judul modal
+            editId = id; 
+            document.getElementById('modalTitle').innerText = `EDIT DATA ${currentTab === 'activities' ? 'KEGIATAN' : 'ANGGOTA'}`;
+            
+            // 4. Masukkan data yang diambil ke dalam input form
             const form = document.getElementById('mainForm');
-            Object.keys(data).forEach(k => { if(form.elements[k]) form.elements[k].value = data[k] || ''; });
+            Object.keys(data).forEach(k => { 
+                if(form.elements[k]) form.elements[k].value = data[k] || ''; 
+            });
         }
     </script>
 </body>
