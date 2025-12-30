@@ -27,6 +27,8 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .action-link:hover { transform: translateY(-2px); }
+        th { cursor: pointer; user-select: none; }
+        th:hover { background-color: #f1f5f9; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -75,10 +77,18 @@
                 <table class="min-w-full divide-y divide-slate-100">
                     <thead class="bg-gray-50/50">
                         <tr>
-                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Program</th>
-                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Periode</th>
-                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Pelaksanaan</th>
-                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Penanggung Jawab</th>
+                            <th onclick="sortTable('program_name')" class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Program <i id="sort-icon-program_name" class="fas fa-sort ml-1 opacity-40"></i>
+                            </th>
+                            <th onclick="sortTable('period')" class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Periode <i id="sort-icon-period" class="fas fa-sort ml-1 opacity-40"></i>
+                            </th>
+                            <th onclick="sortTable('execution_date')" class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Pelaksanaan <i id="sort-icon-execution_date" class="fas fa-sort ml-1 opacity-40"></i>
+                            </th>
+                            <th onclick="sortTable('pic_name')" class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Penanggung Jawab <i id="sort-icon-pic_name" class="fas fa-sort ml-1 opacity-40"></i>
+                            </th>
                             <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Lampiran</th>
                             <th class="px-8 py-5 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">Edit</th>
                         </tr>
@@ -96,9 +106,15 @@
                 <table class="min-w-full divide-y divide-slate-100">
                     <thead class="bg-gray-50/50">
                         <tr>
-                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Nama / NIM</th>
-                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Divisi / Angkatan</th>
-                            <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Kontak</th>
+                            <th onclick="sortTable('name')" class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Nama / NIM <i id="sort-icon-name" class="fas fa-sort ml-1 opacity-40"></i>
+                            </th>
+                            <th onclick="sortTable('division')" class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Divisi / Angkatan <i id="sort-icon-division" class="fas fa-sort ml-1 opacity-40"></i>
+                            </th>
+                            <th onclick="sortTable('phone')" class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Kontak <i id="sort-icon-phone" class="fas fa-sort ml-1 opacity-40"></i>
+                            </th>
                             <th class="px-8 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">TTD</th>
                             <th class="px-8 py-5 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">Edit</th>
                         </tr>
@@ -216,19 +232,19 @@
 
         let currentTab = 'activities';
         let editId = null;
+        let cachedData = [];
+        let sortConfig = { key: null, direction: 'asc' };
 
-        // Saat halaman dimuat
         window.onload = () => {
             fetchData();
         };
 
-        // Ganti Tab
         function switchTab(tab) {
             currentTab = tab;
+            sortConfig = { key: null, direction: 'asc' }; // Reset sort saat pindah tab
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.getElementById(`content-${tab}`).classList.remove('hidden');
             
-            // Update Styling Tab
             const actTab = document.getElementById('tab-activities');
             const memTab = document.getElementById('tab-members');
             
@@ -247,7 +263,6 @@
             fetchData();
         }
 
-        // Ambil Data
         async function fetchData() {
             const table = currentTab;
             const target = table === 'activities' ? 'activityBody' : 'memberBody';
@@ -260,8 +275,13 @@
                 return;
             }
 
-            if (table === 'activities') renderActivities(data);
-            else renderMembers(data);
+            cachedData = data;
+            renderAll();
+        }
+
+        function renderAll() {
+            if (currentTab === 'activities') renderActivities(cachedData);
+            else renderMembers(cachedData);
         }
 
         function renderActivities(data) {
@@ -325,18 +345,69 @@
             `).join('');
         }
 
+        // FUNGSI SORTING
+        function sortTable(key) {
+            // Tentukan arah
+            if (sortConfig.key === key) {
+                sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortConfig.key = key;
+                sortConfig.direction = 'asc';
+            }
+
+            // Update Icon UI
+            updateSortIcons();
+
+            // Lakukan Sorting Data
+            cachedData.sort((a, b) => {
+                let valA = a[key] ? a[key].toString().toLowerCase() : '';
+                let valB = b[key] ? b[key].toString().toLowerCase() : '';
+
+                // Penanganan khusus untuk angka (misal NIM)
+                if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
+                    valA = parseFloat(valA);
+                    valB = parseFloat(valB);
+                }
+
+                if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            renderAll();
+        }
+
+        function updateSortIcons() {
+            // Reset semua icon
+            document.querySelectorAll('th i[id^="sort-icon"]').forEach(icon => {
+                icon.className = 'fas fa-sort ml-1 opacity-40';
+            });
+
+            // Set icon aktif
+            const activeIcon = document.getElementById(`sort-icon-${sortConfig.key}`);
+            if (activeIcon) {
+                activeIcon.className = sortConfig.direction === 'asc' 
+                    ? 'fas fa-sort-up ml-1 opacity-100 text-blue-600' 
+                    : 'fas fa-sort-down ml-1 opacity-100 text-blue-600';
+            }
+        }
+
         // Pencarian
         function filterData() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            const rows = document.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
+            const filtered = cachedData.filter(item => {
+                return Object.values(item).some(val => 
+                    val && val.toString().toLowerCase().includes(query)
+                );
             });
+            
+            if (currentTab === 'activities') renderActivities(filtered);
+            else renderMembers(filtered);
         }
 
-        // Buka Modal (Tambah Data Baru)
+        // Modal
         function openModal() {
-            editId = null; // Penting: Reset ID agar sistem tahu ini data baru
+            editId = null;
             document.getElementById('mainForm').reset();
             document.getElementById('modalTitle').innerText = currentTab === 'activities' ? 'TAMBAH KEGIATAN' : 'TAMBAH ANGGOTA';
             document.getElementById('formModal').classList.remove('hidden');
@@ -348,7 +419,6 @@
             document.getElementById('formModal').classList.add('hidden');
         }
 
-        // Simpan / Edit (Update)
         document.getElementById('mainForm').onsubmit = async (e) => {
             e.preventDefault();
             const btnText = document.getElementById('btnText');
@@ -364,7 +434,6 @@
             const memberCols = ['name', 'nim', 'batch', 'division', 'phone', 'email', 'birth_date', 'signature_link'];
             const validCols = currentTab === 'activities' ? activityCols : memberCols;
 
-            // Pastikan semua kolom yang relevan dikirim
             validCols.forEach(col => { 
                 entry[col] = rawEntry[col] !== "" ? rawEntry[col] : null; 
             });
@@ -372,10 +441,8 @@
             try {
                 let res;
                 if (editId) {
-                    // Update data yang sudah ada berdasarkan ID
                     res = await _supabase.from(currentTab).update(entry).eq('id', editId);
                 } else {
-                    // Masukkan data baru jika editId null
                     res = await _supabase.from(currentTab).insert([entry]);
                 }
 
@@ -396,24 +463,18 @@
             }
         };
 
-        // Fungsi Edit Data
         async function editData(id) {
-            // 1. Ambil data spesifik dari Supabase berdasarkan ID
             const { data, error } = await _supabase.from(currentTab).select('*').eq('id', id).single();
             if (error) {
                 alert("Gagal mengambil data untuk diedit.");
                 return;
             }
             
-            // 2. Buka modal UI (ini akan mereset editId sementara melalui openModal())
             openModal();
-            
-            // 3. Set kembali editId dan sesuaikan judul modal
             editId = id; 
             document.getElementById('modalTitle').innerText = `EDIT DATA ${currentTab === 'activities' ? 'KEGIATAN' : 'ANGGOTA'}`;
-            
-            // 4. Masukkan data yang diambil ke dalam input form
             const form = document.getElementById('mainForm');
+            
             Object.keys(data).forEach(k => { 
                 if(form.elements[k]) form.elements[k].value = data[k] || ''; 
             });
