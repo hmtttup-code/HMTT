@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Kegiatan & Anggota Himpunan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .active-tab { border-bottom: 4px solid #3b82f6; color: #3b82f6; }
+        .modal { transition: opacity 0.25s ease; }
+        body { background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Sistem Informasi Himpunan</h1>
+            <p class="text-gray-500">Manajemen Program Kerja dan Database Anggota</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex space-x-8 mb-6 border-b border-gray-200 bg-white px-6 rounded-t-xl">
+            <button onclick="switchTab('activities')" id="tab-activities" class="py-4 font-semibold active-tab transition-all">
+                <i class="fas fa-tasks mr-2"></i>Program Kerja
+            </button>
+            <button onclick="switchTab('members')" id="tab-members" class="py-4 font-semibold text-gray-500 hover:text-blue-500 transition-all">
+                <i class="fas fa-users mr-2"></i>Data Anggota
+            </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="mb-6 flex flex-col md:flex-row gap-4">
+            <div class="relative flex-grow">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" id="searchInput" onkeyup="filterData()" placeholder="Cari data..." class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white">
+            </div>
+            <button id="addBtn" onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                <i class="fas fa-plus mr-2"></i>Tambah Data
+            </button>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-activities" class="tab-content">
+            <div class="overflow-x-auto bg-white rounded-xl shadow-sm">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Program Kerja</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periode</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deadline</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PJ</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">File LPJ</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dokumentasi</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activityBody" class="divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="content-members" class="tab-content hidden">
+            <div class="overflow-x-auto bg-white rounded-xl shadow-sm">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama / NIM</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Divisi / Angkatan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kontak</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tgl Lahir</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">TTD</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memberBody" class="divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form -->
+    <div id="formModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-xl font-bold text-gray-800">Tambah Data</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <form id="mainForm" class="p-6">
+                <div id="activityFields" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Program Kerja</label>
+                        <input type="text" name="program_name" class="w-full border rounded-lg p-2" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Periode (3 Bulan)</label>
+                        <select name="period" class="w-full border rounded-lg p-2">
+                            <option>Januari - Maret</option>
+                            <option>April - Juni</option>
+                            <option>Juli - September</option>
+                            <option>Oktober - Desember</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                        <input type="date" name="deadline" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Penanggung Jawab</label>
+                        <input type="text" name="person_in_charge" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Link LPJ</label>
+                        <input type="url" name="lpj_link" placeholder="https://..." class="w-full border rounded-lg p-2">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Link Dokumentasi</label>
+                        <input type="url" name="doc_link" placeholder="https://..." class="w-full border rounded-lg p-2">
+                    </div>
+                </div>
+
+                <div id="memberFields" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                        <input type="text" name="name" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">NIM</label>
+                        <input type="text" name="nim" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Angkatan</label>
+                        <input type="text" name="year" placeholder="2023" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Divisi</label>
+                        <select name="division" class="w-full border rounded-lg p-2">
+                            <option>Ketua</option><option>Wakil Ketua</option><option>Sekretaris</option>
+                            <option>Bendahara</option><option>AKRIS</option><option>HIDE</option>
+                            <option>EKRAF</option><option>PSDM</option><option>MEDKOMINFO</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">No. HP</label>
+                        <input type="text" name="phone" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" name="email" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+                        <input type="date" name="birth_date" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Link TTD</label>
+                        <input type="url" name="signature_link" placeholder="https://..." class="w-full border rounded-lg p-2">
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-6 py-2 border rounded-lg text-gray-600 hover:bg-gray-50">Batal</button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = "https://kgctexmnjodfkpdhnozz.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_tEISwf7vf3O9LST_FzzAOQ_LLvQYIjo";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentTab = 'activities';
+        let editId = null;
+
+        // Initialize Data
+        window.onload = () => {
+            fetchData();
+        };
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            
+            document.getElementById('tab-activities').classList.remove('active-tab', 'text-blue-500');
+            document.getElementById('tab-members').classList.remove('active-tab', 'text-blue-500');
+            document.getElementById('tab-activities').classList.add('text-gray-500');
+            document.getElementById('tab-members').classList.add('text-gray-500');
+            
+            document.getElementById(`tab-${tab}`).classList.add('active-tab', 'text-blue-500');
+            document.getElementById(`tab-${tab}`).classList.remove('text-gray-500');
+            
+            fetchData();
+        }
+
+        async function fetchData() {
+            const table = currentTab;
+            const { data, error } = await _supabase.from(table).select('*').order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error("Fetch error:", error);
+                return;
+            }
+
+            if (currentTab === 'activities') {
+                renderActivities(data);
+            } else {
+                renderMembers(data);
+            }
+        }
+
+        function renderActivities(data) {
+            const body = document.getElementById('activityBody');
+            body.innerHTML = data.map(item => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 font-medium text-gray-900">${item.program_name}</td>
+                    <td class="px-6 py-4">${item.period}</td>
+                    <td class="px-6 py-4">${item.deadline || '-'}</td>
+                    <td class="px-6 py-4">${item.person_in_charge || '-'}</td>
+                    <td class="px-6 py-4">
+                        ${item.lpj_link ? `<a href="${item.lpj_link}" target="_blank" class="text-blue-600 hover:underline"><i class="fas fa-file-pdf mr-1"></i>Link</a>` : '<span class="text-red-400">Belum Ada</span>'}
+                    </td>
+                    <td class="px-6 py-4">
+                        ${item.doc_link ? `<a href="${item.doc_link}" target="_blank" class="text-blue-600 hover:underline"><i class="fas fa-images mr-1"></i>Link</a>` : '<span class="text-gray-400">-</span>'}
+                    </td>
+                    <td class="px-6 py-4 space-x-2">
+                        <button onclick="editData('${item.id}')" class="text-yellow-600 hover:text-yellow-800"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteData('${item.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderMembers(data) {
+            const body = document.getElementById('memberBody');
+            body.innerHTML = data.map(item => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div class="font-bold">${item.name}</div>
+                        <div class="text-sm text-gray-500">${item.nim}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">${item.division}</span>
+                        <div class="text-sm mt-1">Angkatan ${item.year}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        <div><i class="fab fa-whatsapp text-green-500 mr-1"></i>${item.phone}</div>
+                        <div class="text-gray-500">${item.email}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm">${item.birth_date || '-'}</td>
+                    <td class="px-6 py-4">
+                        ${item.signature_link ? `<a href="${item.signature_link}" target="_blank" class="text-gray-600 hover:text-black"><i class="fas fa-signature"></i></a>` : '-'}
+                    </td>
+                    <td class="px-6 py-4 space-x-2">
+                        <button onclick="editData('${item.id}')" class="text-yellow-600 hover:text-yellow-800"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteData('${item.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Search/Filter Logic
+        function filterData() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll(currentTab === 'activities' ? '#activityBody tr' : '#memberBody tr');
+            
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        // Modal Logic
+        function openModal() {
+            editId = null;
+            document.getElementById('mainForm').reset();
+            document.getElementById('modalTitle').innerText = `Tambah ${currentTab === 'activities' ? 'Program Kerja' : 'Anggota'}`;
+            document.getElementById('formModal').classList.remove('hidden');
+            
+            if (currentTab === 'activities') {
+                document.getElementById('activityFields').classList.remove('hidden');
+                document.getElementById('memberFields').classList.add('hidden');
+            } else {
+                document.getElementById('activityFields').classList.add('hidden');
+                document.getElementById('memberFields').classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('formModal').classList.add('hidden');
+        }
+
+        // CRUD Operations
+        document.getElementById('mainForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const entry = Object.fromEntries(formData.entries());
+            
+            // Clean up empty fields
+            Object.keys(entry).forEach(key => {
+                if (!entry[key]) delete entry[key];
+            });
+
+            let result;
+            if (editId) {
+                result = await _supabase.from(currentTab).update(entry).eq('id', editId);
+            } else {
+                result = await _supabase.from(currentTab).insert([entry]);
+            }
+
+            if (result.error) {
+                alert("Gagal menyimpan data: " + result.error.message);
+            } else {
+                closeModal();
+                fetchData();
+            }
+        };
+
+        async function editData(id) {
+            editId = id;
+            const { data, error } = await _supabase.from(currentTab).select('*').eq('id', id).single();
+            if (error) return;
+
+            openModal();
+            document.getElementById('modalTitle').innerText = `Edit ${currentTab === 'activities' ? 'Program Kerja' : 'Anggota'}`;
+            
+            const form = document.getElementById('mainForm');
+            Object.keys(data).forEach(key => {
+                const input = form.elements[key];
+                if (input) input.value = data[key];
+            });
+        }
+
+        async function deleteData(id) {
+            if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+                const { error } = await _supabase.from(currentTab).delete().eq('id', id);
+                if (error) alert("Gagal menghapus");
+                else fetchData();
+            }
+        }
+    </script>
+</body>
+</html>
